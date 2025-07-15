@@ -16,16 +16,16 @@ def sigmoid(x):
 
 lr = 0.1
 for i in range(1000):
-    z1 = np.dot(x, w1) + b1 # 4, 2
-    h1 = relu(z1) # 4, 2
-    z2 = np.dot(h1, w2) + b2 # 4, 1
-    h2 = sigmoid(z2) # 4, 1
+    z1 = np.dot(x, w1) + b1
+    h1 = relu(z1)
+    z2 = np.dot(h1, w2) + b2
+    h2 = sigmoid(z2)
 
     loss = (1/2 * (y - h2)**2).mean()
 
-    dh2 = -(y - h2) # 4, 1
-    dz2 = dh2 * h2 * (1-h2) # 4, 1
-    dw2 = np.dot(h1.T, dz2) # 2, 4 @ 4, 1
+    dh2 = -(y - h2)
+    dz2 = dh2 * h2 * (1-h2)
+    dw2 = np.dot(h1.T, dz2)
     db2 = np.sum(dz2, axis=0)
 
     dh1 = np.dot(dz2, w2.T)
