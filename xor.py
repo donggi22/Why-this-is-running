@@ -139,7 +139,7 @@ class XOR():
             self.affine_2.w -= lr*dw2
             self.affine_2.b -= lr*db2
             self.affine_1.w -= lr*dw1
-            self.affine_1.b -= lr*db2
+            self.affine_1.b -= lr*db1
 
             if epoch % 100 == 99:
                 print(cost)
@@ -162,3 +162,4 @@ class XOR():
             return 1
         else:
             return 0
+
