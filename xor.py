@@ -14,6 +14,8 @@ def relu(x):
 def sigmoid(x):
     return 1 / (1+np.exp(-x))
 
+losses = []
+
 lr = 0.1
 for i in range(1000):
     z1 = np.dot(x, w1) + b1
@@ -21,10 +23,13 @@ for i in range(1000):
     z2 = np.dot(h1, w2) + b2
     h2 = sigmoid(z2)
 
-    loss = (1/2 * (y - h2)**2).mean()
+    loss = -np.mean(y*np.log(h2+1e-10) + (1-y)*np.log(1-h2+1e-10))
 
-    dh2 = -(y - h2)
-    dz2 = dh2 * h2 * (1-h2)
+    N = h2.shape[0]   # 배치 크기
+    
+    # dh2 = ((h2 - y) / (h2*(1 - h2) + 1e-10)) / N
+    # dz2 = dh2 * h2 * (1-h2)
+    dz2 = (h2 - y) / N
     dw2 = np.dot(h1.T, dz2)
     db2 = np.sum(dz2, axis=0)
 
@@ -38,14 +43,12 @@ for i in range(1000):
     w2 -= lr * dw2
     b2 -= lr * db2
     
+    losses.append(loss)
     if i % 100 == 99:
-        print(f'epoch: {i}, loss: {loss}')
+        print(f'epoch: {i+1}, loss: {loss}')
         
-    if loss < 0.01:
-        print(f'epoch: {i}, loss: {loss} \n 학습이 잘됐습니다.')
-        break
-else:
-    print('학습이 제대로 되지 않았습니다.')
+
+print('학습이 완료됐습니다.')
 
 
 z1 = np.dot(x, w1) + b1
@@ -60,6 +63,7 @@ print(f'예측값: \n{np.round(h2)}')
 #--- class ver
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Affine():
     def __init__(self, m, n):
@@ -92,14 +96,15 @@ class Sigmoid():
     def backward(self, dx):
         return dx*self.out*(1-self.out)
 
-class MSE():
+class BCE():
     def forward(self, h, y):
         self.h = h
         self.y = y
-        return (1/2 * (h - y) ** 2).mean()
+        return -np.mean(y*np.log(h+1e-10) + (1-y)*np.log(1-h+1e-10))
 
     def backward(self):
-        return (self.h - self.y)
+        N = self.h.shape[0]   # 배치 크기
+        return ((self.h - self.y) / (self.h*(1 - self.h) + 1e-10)) / N
 
 class XOR():
     def __init__(self):
@@ -107,7 +112,7 @@ class XOR():
         self.affine_2 = Affine(8, 1)
         self.relu = Relu()
         self.sigmoid = Sigmoid()
-        self.mse = MSE()
+        self.bce = BCE()
         
         self.x = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
         self.y = np.array([[0], [1], [1], [0]])
@@ -116,14 +121,15 @@ class XOR():
         epochs = 1000
         lr = 0.1
 
+        self.losses=[]
         for epoch in range(epochs):
             o = self.affine_1.forward(self.x)
             z = self.relu.forward(o)
             a = self.affine_2.forward(z)
             h = self.sigmoid.forward(a)
-            cost = self.mse.forward(h, self.y)
+            loss = self.bce.forward(h, self.y)
 
-            dh = self.mse.backward()
+            dh = self.bce.backward()
             da = self.sigmoid.backward(dh)
             dz = self.affine_2.backward(da)
 
@@ -141,16 +147,12 @@ class XOR():
             self.affine_1.w -= lr*dw1
             self.affine_1.b -= lr*db1
 
+            self.losses.append(loss)
             if epoch % 100 == 99:
-                print(cost)
-                if cost < 0.01:
-                    print(f'최종 cost: {cost}, 학습이 잘됐습니다.')
-                    break
+                print(f'epoch: {epoch+1}, loss: {loss}')
+        
 
-        else:
-            if cost > 0.01:
-                print(f'최종 cost: {cost}, 학습이 제대로 되지 않았습니다.')
-        print(f'결과: \n {h}')
+        print('학습이 완료됐습니다.')
 
     def predict(self, x):
         o = self.affine_1.forward(x)
@@ -158,8 +160,13 @@ class XOR():
         a = self.affine_2.forward(z)
         h = self.sigmoid.forward(a)
 
-        if h > 0.5:
-            return 1
-        else:
-            return 0
+        pred = (h > 0.5)
+        print(pred.astype(int))
+
+xor = XOR()
+xor.learn()
+xor.predict([[0, 0], [0, 1], [1, 0], [1, 1]])
+plt.plot(xor.losses)
+plt.show()
+
 
